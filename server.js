@@ -318,36 +318,54 @@ async function handleConvert(req, res) {
   await fsp.mkdir(dirs.materials, { recursive: true });
   await fsp.mkdir(dirs.models, { recursive: true });
 
-    const results = [];
-    const files = [];
-    const usedStems = new Set();
-    try {
-      for (const item of body.files) {
-        try {
-          const relative = cleanRelativePath(item.relativePath);
-          const ext = path.extname(relative).toLowerCase();
-          if (imageExtensions.has(ext)) {
-            files.push(await convertImage(item, body, dirs, results, usedStems));
-          } else if (videoExtensions.has(ext)) {
-            files.push(await convertVideo(item, body, dirs, results, usedStems));
-          } else {
-            files.push({ file: relative, status: 'skipped', message: '不支持的文件类型。' });
-          }
-        } catch (error) {
-          files.push({ file: item.relativePath, status: 'failed', message: error.message });
-          results.push(`${item.relativePath}: ${error.message}`);
+  const results = [];
+  const files = [];
+  const usedStems = new Set();
+  res.writeHead(200, {
+    'content-type': 'application/x-ndjson; charset=utf-8',
+    'cache-control': 'no-cache'
+  });
+  try {
+    for (const item of body.files) {
+      let result;
+      const logStart = results.length;
+      try {
+        const relative = cleanRelativePath(item.relativePath);
+        const ext = path.extname(relative).toLowerCase();
+        if (imageExtensions.has(ext)) {
+          result = await convertImage(item, body, dirs, results, usedStems);
+        } else if (videoExtensions.has(ext)) {
+          result = await convertVideo(item, body, dirs, results, usedStems);
+        } else {
+          result = { file: relative, status: 'skipped', message: '不支持的文件类型。' };
+        }
+      } catch (error) {
+        result = { file: item.relativePath, status: 'failed', message: error.message };
+        results.push(`${item.relativePath}: ${error.message}`);
+      }
+      for (let i = logStart; i < results.length; i++) {
+        if (!res.destroyed) {
+          res.write(JSON.stringify({ type: 'log', text: results[i] }) + '\n');
         }
       }
-    } finally {
-      await fsp.rm(sessionDir, { recursive: true, force: true }).catch(() => {});
+      files.push(result);
+      if (!res.destroyed) {
+        res.write(JSON.stringify({ type: 'file', ...result }) + '\n');
+      }
     }
+  } finally {
+    await fsp.rm(sessionDir, { recursive: true, force: true }).catch(() => {});
+  }
 
-  send(res, 200, {
-    ok: files.some(item => item.status === 'success' || item.status === 'copied'),
-    outputDir,
-    files,
-    log: results
-  });
+  if (!res.destroyed) {
+    res.end(JSON.stringify({
+      type: 'done',
+      ok: files.some(item => item.status === 'success' || item.status === 'copied'),
+      outputDir,
+      files,
+      log: results
+    }) + '\n');
+  }
 }
 
 async function handleStage(req, res, url) {

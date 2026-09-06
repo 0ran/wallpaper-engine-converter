@@ -71,6 +71,7 @@ const translations = {
     cropPadding: '填充',
     cropHint: '裁剪坐标会按每张图片的透明区域自动计算。',
     outputDir: '输出目录',
+    outputDirHint: '请填写输出目录；留空时默认输出到项目根目录下的 converted_output。',
     convertButton: '一键转换',
     progressWaiting: '等待导入文件。',
     kindImage: '图片',
@@ -142,6 +143,7 @@ const translations = {
     cropPadding: 'Padding',
     cropHint: 'Crop bounds are calculated automatically from each image\u2019s transparent area.',
     outputDir: 'Output directory',
+    outputDirHint: 'Set the output directory; when empty, output defaults to converted_output under the project root.',
     convertButton: 'Convert Now',
     progressWaiting: 'Waiting for files.',
     kindImage: 'Image',
@@ -350,7 +352,12 @@ function setItemStatus(relativePath, status) {
   const item = state.find(entry => entry.relativePath === relativePath);
   if (!item) return;
   item.status = status;
-  renderFiles();
+  const row = [...fileList.children].find(child => child.querySelector('.file-name') && child.querySelector('.file-name').textContent === relativePath);
+  if (row) {
+    const statusElement = row.querySelector('.file-status');
+    statusElement.className = `file-status ${status}`;
+    statusElement.textContent = statusLabel(status);
+  }
 }
 
 function appendLog(text) {
@@ -427,6 +434,47 @@ async function uploadFile(item, sessionId) {
   }
 }
 
+async function readNdjsonResponse(response) {
+  if (!response.body) return response.json();
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result = null;
+
+  const handleLine = line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    let payload;
+    try {
+      payload = JSON.parse(trimmed);
+    } catch (error) {
+      return;
+    }
+    if (payload.type === 'log') {
+      appendLog(translateServerText(payload.text));
+    } else if (payload.type === 'file') {
+      setItemStatus(payload.file, payload.status);
+    } else if (payload.type === 'done') {
+      result = payload;
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let newlineIndex;
+    while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+      handleLine(buffer.slice(0, newlineIndex));
+      buffer = buffer.slice(newlineIndex + 1);
+    }
+  }
+  buffer += decoder.decode();
+  handleLine(buffer);
+  if (!result) throw new Error(t('conversionFailed'));
+  return result;
+}
+
 async function convert() {
   const usable = state.filter(item => isImage(item) || isVideo(item));
   if (!usable.length) {
@@ -462,12 +510,15 @@ async function convert() {
       })
     });
 
-    const result = await response.json();
-    if (!response.ok) throw new Error(translateServerText(result.error || t('conversionFailed')));
-    for (const item of result.files || []) {
-      setItemStatus(item.file, item.status);
+    if (!response.ok) {
+      const raw = await response.text();
+      let message = raw;
+      try {
+        message = JSON.parse(raw).error || raw;
+      } catch (error) {}
+      throw new Error(translateServerText(message || t('conversionFailed')));
     }
-    for (const line of result.log || []) appendLog(translateServerText(line));
+    const result = await readNdjsonResponse(response);
     appendLog(t('outputDirLog', { path: result.outputDir }));
     setProgress(result.ok ? 'conversionDone' : 'conversionDoneWarnings');
   } catch (error) {
