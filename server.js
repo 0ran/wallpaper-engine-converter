@@ -154,7 +154,7 @@ function materialJson(baseName, options) {
 
 function modelJson(relativeMaterialPath) {
   return {
-    autosize: false,
+    autosize: true,
     material: relativeMaterialPath
   };
 }
