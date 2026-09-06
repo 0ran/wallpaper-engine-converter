@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wallpaper Engine 转换器</title>
+  <script>
+    (function () {
+      var theme = 'dark';
+      var lang = 'zh';
+      try {
+        theme = localStorage.getItem('dtex-theme') || 'dark';
+        var savedLang = localStorage.getItem('dtex-lang');
+        lang = savedLang === 'zh' || savedLang === 'en'
+          ? savedLang
+          : ((navigator.language || '').toLowerCase().indexOf('zh') === 0 ? 'zh' : 'en');
+      } catch (error) {}
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    })();
+  </script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z" />
+              <path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65" />
+              <path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65" />
+            </svg>
+          </span>
+          <span class="brand-copy">
+            <strong><span data-i18n="brandTitleA">WALLPAPER</span> <span data-i18n="brandTitleB">ENGINE</span></strong>
+            <small><span data-i18n="brandSubtitle">转换器</span><span class="brand-edition">STUDIO</span></small>
+          </span>
+        </div>
+
+        <div class="mode-tabs" role="toolbar" aria-label="导入操作" data-i18n-aria-label="toolbarAria">
+          <button class="mode-tab" id="pickFilesButton" type="button">
+            <span class="mode-tab-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" x2="12" y1="3" y2="15" />
+              </svg>
+            </span>
+            <span class="mode-tab-copy">
+              <span data-i18n="addFiles">添加图片 / 视频</span>
+              <small aria-hidden="true">IMPORT MEDIA</small>
+            </span>
+          </button>
+          <button class="mode-tab" id="pickFolderButton" type="button">
+            <span class="mode-tab-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                <line x1="12" x2="12" y1="11" y2="17" />
+                <line x1="9" x2="15" y1="14" y2="14" />
+              </svg>
+            </span>
+            <span class="mode-tab-copy">
+              <span data-i18n="addFolder">批量导入文件夹</span>
+              <small aria-hidden="true">BATCH FOLDER</small>
+            </span>
+          </button>
+          <button class="mode-tab" id="clearFilesButton" type="button">
+            <span class="mode-tab-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                <line x1="10" x2="10" y1="11" y2="17" />
+                <line x1="14" x2="14" y1="11" y2="17" />
+              </svg>
+            </span>
+            <span class="mode-tab-copy">
+              <span data-i18n="clear">清空</span>
+              <small aria-hidden="true">CLEAR</small>
+            </span>
+          </button>
+        </div>
+
+        <div class="topbar-actions">
+          <span class="local-badge" title="图片仅在本地浏览器中处理，不会上传至服务器" data-i18n-title="localBadgeHint">
+            <span class="local-dot" aria-hidden="true"></span>
+            <span><span data-i18n="localBadge">本地处理</span><small aria-hidden="true">ON DEVICE</small></span>
+          </span>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <button id="langToggle" class="icon-btn lang-toggle" type="button" aria-label="切换到英文" title="切换到英文" data-i18n-aria-label="langSwitch" data-i18n-title="langSwitch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+              <path d="M2 12h20" />
+            </svg>
+            <span class="lang-toggle-label" data-i18n="langLabel">EN</span>
+          </button>
+          <button id="themeToggle" class="icon-btn theme-toggle" type="button" aria-label="切换明暗主题" title="切换明暗主题" data-i18n-aria-label="themeSwitch" data-i18n-title="themeSwitch">
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="m4.93 4.93 1.41 1.41" />
+              <path d="m17.66 17.66 1.41 1.41" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="m6.34 17.66-1.41 1.41" />
+              <path d="m19.07 4.93-1.41 1.41" />
+            </svg>
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+            <span id="themeToggleLabel" class="lang-toggle-label"></span>
+          </button>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <a class="icon-btn" href="https://github.com/0ran" target="_blank" rel="noopener noreferrer" aria-label="前往 GitHub 主页" title="GitHub" data-i18n-aria-label="github" data-i18n-title="githubTitle">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+            </svg>
+          </a>
+          <a class="icon-btn" href="https://space.bilibili.com/111174060" target="_blank" rel="noopener noreferrer" aria-label="前往 Bilibili 主页" title="Bilibili" data-i18n-aria-label="bilibili" data-i18n-title="bilibiliTitle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="7" width="18" height="13" rx="3" />
+              <path d="m8 3 3 4" />
+              <path d="m16 3-3 4" />
+              <path d="M9 12v3" />
+              <path d="M15 12v3" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="notice-bar" role="note">
+      <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+      </svg>
+      <p class="notice-text" data-i18n="sceneJsonNotice">转换生成的内容不会自动显示为场景图层，请在 scene.json 项目中手动添加对应的资源引用。</p>
+    </div>
+
+    <main class="workspace">
+      <section class="panel queue-panel" aria-labelledby="queue-title">
+        <div class="panel-head">
+          <h2 id="queue-title" data-i18n="queueTitle">导入队列</h2>
+          <span id="queueSummary">0 张图片，0 个视频</span>
+        </div>
+        <div id="dropZone" class="dropzone" tabindex="0">
+          <p class="empty" id="emptyText" data-i18n="emptyText">把图片、视频或整个文件夹拖到这里，或使用上方按钮导入。</p>
+          <ul id="fileList" class="file-list"></ul>
+        </div>
+      </section>
+
+      <section class="panel log-panel" aria-labelledby="log-title">
+        <div class="panel-head">
+          <h2 id="log-title" data-i18n="logTitle">转换日志</h2>
+          <button id="clearLogButton" type="button" class="secondary" data-i18n="clearLog">清空日志</button>
+        </div>
+        <pre id="log" aria-live="polite"></pre>
+      </section>
+
+      <aside class="panel settings-panel" aria-labelledby="settings-title">
+        <div class="panel-head">
+          <h2 id="settings-title" data-i18n="settingsTitle">导入设置</h2>
+        </div>
+
+        <label class="field">
+          <span data-i18n="quality">质量</span>
+          <select id="quality">
+            <option value="rgba8888" data-i18n="qualityRgba">高质量 - 无压缩 (RGBA 8888)</option>
+            <option value="dxt5" data-i18n="qualityDxt5">较好性能 - 轻微压缩 (DXT5)</option>
+            <option value="dxt1" data-i18n="qualityDxt1">高效能 - 中等压缩等级 (DXT1)</option>
+          </select>
+        </label>
+
+        <fieldset class="options">
+          <legend data-i18n="options">选项</legend>
+          <label><input type="checkbox" id="pixelArt"><span data-i18n="pixelArt">像素画优化 - (禁用双线形过滤)</span></label>
+          <label><input type="checkbox" id="noMip"><span data-i18n="noMip">没有纹理贴图</span></label>
+          <label><input type="checkbox" id="clampUV" checked><span data-i18n="clampUV">钳制 UV</span></label>
+          <label><input type="checkbox" id="spriteSheet"><span data-i18n="spriteSheet">Sprite 表单</span></label>
+          <label><input type="checkbox" id="cropTransparent"><span data-i18n="cropTransparent">裁剪透明区域</span></label>
+        </fieldset>
+
+        <div id="spriteFields" class="conditional hidden">
+          <div class="grid-2">
+            <label><span data-i18n="spriteFrames">帧数</span><input id="spriteFrames" type="number" min="1" value="10"></label>
+            <label><span data-i18n="spriteDuration">时长</span><input id="spriteDuration" type="number" min="0.1" step="0.1" value="1"></label>
+            <label><span data-i18n="spriteWidth">帧宽</span><input id="spriteWidth" type="number" min="1" value="64"></label>
+            <label><span data-i18n="spriteHeight">帧高</span><input id="spriteHeight" type="number" min="1" value="64"></label>
+          </div>
+        </div>
+
+        <div id="cropFields" class="conditional hidden">
+          <label><span data-i18n="cropPadding">填充</span><input id="cropPadding" type="number" min="0" value="50"></label>
+          <p class="hint" data-i18n="cropHint">裁剪坐标会按每张图片的透明区域自动计算。</p>
+        </div>
+
+        <label class="field">
+          <span data-i18n="outputDir">输出目录</span>
+          <input id="outputDir" type="text" value="D:\AXD\GitHub\Dtex\converted_output">
+        </label>
+
+        <label class="field">
+          <span>resourcecompiler64.exe</span>
+          <input id="compilerPath" type="text">
+        </label>
+
+        <button id="convertButton" type="button" class="primary" data-i18n="convertButton">一键转换</button>
+        <p id="progress" class="progress" data-i18n="progressWaiting">等待导入文件。</p>
+      </aside>
+    </main>
+
+    <input id="fileInput" type="file" multiple accept="image/*,video/*" hidden>
+    <input id="folderInput" type="file" webkitdirectory directory multiple hidden>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
