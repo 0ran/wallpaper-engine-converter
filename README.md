@@ -4,6 +4,8 @@ English | [简体中文](README.zh-CN.md)
 
 This is a local web tool for batch-converting images and videos into a Wallpaper Engine-ready resource structure and invoking Wallpaper Engine's bundled `resourcecompiler64.exe` to generate `.tex` files.
 
+![Wallpaper Engine Converter preview](https://i.ibb.co/gFDf646g/Snow-Shot-2026-09-07-00-24-22.png)
+
 > **Important**
 >
 > Generated content is not automatically displayed as scene layers. Add the corresponding resource references manually in your `scene.json` project.

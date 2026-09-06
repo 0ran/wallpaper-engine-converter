@@ -4,6 +4,8 @@
 
 这是一个本地网页工具，用来批量把图片或视频整理成 Wallpaper Engine 可导入的资源结构，并调用 Wallpaper Engine 自带的 `resourcecompiler64.exe` 生成 `.tex`。
 
+![Wallpaper Engine 转换器预览](https://i.ibb.co/gFDf646g/Snow-Shot-2026-09-07-00-24-22.png)
+
 > **重要提示**
 >
 > 转换生成的内容不会自动显示为场景图层，请在 `scene.json` 项目中手动添加对应的资源引用。
